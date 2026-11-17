@@ -282,7 +282,19 @@ export function Wizard() {
 
       {step === 1 && (
         <section className="space-y-6 animate-[fadeIn_0.3s_ease]">
-          <Question title="อยากให้ตัวละครเป็นใคร?">
+          <div className="quest-intro">
+            <p className="quest-intro__eyebrow">เควสต์แรก</p>
+            <p className="quest-intro__title">มาสร้างตัวละครคำนวณภาษีกันเถอะ</p>
+            <p className="quest-intro__body">
+              เลือกหน้าตาตัวละครก่อน แล้วค่อยใส่รายได้ ยิ่งรายได้/ขั้นภาษีสูง
+              ชุดตัวละครจะปังขึ้น (แชร์ได้ ไม่โชว์จำนวนเงิน)
+            </p>
+          </div>
+
+          <Question
+            title="ตัวละครหน้าตาแบบไหน?"
+            tip={'แค่เลือกเพศตัวละครบนจอ\nไม่เกี่ยวกับการคำนวณภาษี'}
+          >
             <ChoiceRow
               options={[
                 { value: 'female', label: 'ผู้หญิง' },
@@ -760,10 +772,10 @@ function Brand({ yearLabel }: { yearLabel: string }) {
       </h1>
       <div className="max-w-md space-y-1 text-sm leading-relaxed text-[var(--color-muted)]">
         <p>
-          คำนวณภาษีเงินเดือน / ฟรีแลนซ์ ปี 2569 - ปีนี้โดนไปกี่บาทน้าา
+          สร้างตัวละคร · ใส่รายได้ · ดูว่าปี 2569 โดนภาษีกี่บาท
         </p>
         <p className="text-[var(--color-faint)]">
-          {yearLabel} · คิดในเครื่องคุณ ไม่เก็บอะไรไว้
+          {yearLabel} · คิดในเครื่องคุณ · ไม่เก็บรายได้/ข้อมูลส่วนตัว
         </p>
       </div>
     </header>
