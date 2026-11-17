@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <!-- แก้ https://example.com เป็นโดเมนจริงหลัง deploy -->
   <url>
-    <loc>https://example.com/</loc>
+    <loc>https://taxi-chi-seven.vercel.app/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>

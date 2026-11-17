@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 
 # แก้โดเมนให้ตรงของจริง
-Sitemap: https://example.com/sitemap.xml
+Sitemap: https://taxi-chi-seven.vercel.app/
