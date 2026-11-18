@@ -5,7 +5,12 @@ import {
   type WealthTier,
 } from '../characters/tiers'
 import type { TaxResult } from '../engine'
-import { satangToBaht } from '../engine'
+import {
+  buildShareLine,
+  copyText,
+  marginalRate,
+  siteUrl,
+} from '../lib/shareLine'
 
 type Gender = 'male' | 'female'
 
@@ -16,15 +21,6 @@ type Props = {
   partnerGender: Gender | null
   partnerTier: Extract<WealthTier, 4 | 5> | null
   spouseHasIncome: boolean
-}
-
-function marginalRate(result: TaxResult): number {
-  let m = 0
-  for (const line of result.bracketLines) {
-    if (line.taxableSatang > 0) m = Math.max(m, line.ratePercent)
-  }
-  if (satangToBaht(result.netIncomeSatang) > 0 && result.taxSatang === 0) return 0
-  return m
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -360,7 +356,9 @@ export function ShareCard({
 
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [copied, setCopied] = useState<'line' | 'url' | null>(null)
   const previewRef = useRef<HTMLDivElement>(null)
+  const shareLine = useMemo(() => buildShareLine(result), [result])
 
   async function makeBlob() {
     return buildSharePng({
@@ -401,11 +399,12 @@ export function ShareCard({
       const file = new File([blob], `donkeebaht-lv${info.tier}.png`, {
         type: 'image/png',
       })
+      const text = `${shareLine}\nลองคำนวณที่ ${siteUrl()}`
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({
           files: [file],
           title: 'โดนกี่บาท',
-          text: `ฉันได้ LV.${info.tier} ${info.title} บนโดนกี่บาท`,
+          text,
         })
       } else {
         await download()
@@ -418,6 +417,26 @@ export function ShareCard({
     }
   }
 
+  async function copyLine() {
+    const ok = await copyText(`${shareLine}\n${siteUrl()}`)
+    if (ok) {
+      setCopied('line')
+      window.setTimeout(() => setCopied(null), 1800)
+    } else {
+      setErr('คัดลอกไม่สำเร็จ ลองกดค้างเลือกข้อความเอง')
+    }
+  }
+
+  async function copyUrl() {
+    const ok = await copyText(siteUrl())
+    if (ok) {
+      setCopied('url')
+      window.setTimeout(() => setCopied(null), 1800)
+    } else {
+      setErr('คัดลอกลิงก์ไม่สำเร็จ')
+    }
+  }
+
   return (
     <section className="share-card panel space-y-3 p-4">
       <header className="space-y-1">
@@ -427,6 +446,18 @@ export function ShareCard({
           เซฟไปลง Stories / IG / Facebook ได้
         </p>
       </header>
+
+      <div className="share-line">
+        <p className="share-line__text">{shareLine}</p>
+        <div className="share-line__actions">
+          <button type="button" className="btn-ghost share-line__btn" onClick={() => void copyLine()}>
+            {copied === 'line' ? 'คัดลอกแล้ว ✓' : 'คัดลอกสรุป'}
+          </button>
+          <button type="button" className="btn-ghost share-line__btn" onClick={() => void copyUrl()}>
+            {copied === 'url' ? 'คัดลอกแล้ว ✓' : 'คัดลอกลิงก์เว็บ'}
+          </button>
+        </div>
+      </div>
 
       <div ref={previewRef} className="share-card__preview" aria-hidden>
         <div className="share-card__stage">

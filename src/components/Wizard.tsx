@@ -11,12 +11,20 @@ import {
 } from '../engine'
 import { EquationBar } from './EquationBar'
 import { MoneyInput, parseBahtInput } from './MoneyInput'
+import {
+  emptyMonths,
+  fillMonths,
+  MonthIncomePad,
+  sumMonths,
+} from './MonthIncomePad'
 import { RangeMoney } from './RangeMoney'
 import { ResultView } from './ResultView'
 import { StepSkeleton } from './StepSkeleton'
 import { Tooltip } from './Tooltip'
 import type { WealthTier } from '../characters/tiers'
 import { VizBoard } from './VizBoard'
+
+type IncomePeriod = 'month' | 'year' | 'byMonth'
 
 const STEP_LOAD_MS = 420
 const BOOT_LOAD_MS = 650
@@ -39,9 +47,12 @@ type IdentityState = {
 
 /** Step 2+ — money / deductions (reset when back to step 1) */
 type CalcState = {
-  period: 'month' | 'year'
+  period: IncomePeriod
   salary: string
   freelance: string
+  /** Per-month amounts when period === 'byMonth' */
+  salaryMonths: string[]
+  freelanceMonths: string[]
   socialSecurity: string
   lifeInsurance: string
   healthInsurance: string
@@ -77,6 +88,8 @@ const initialCalc: CalcState = {
   period: 'year',
   salary: '',
   freelance: '',
+  salaryMonths: emptyMonths(),
+  freelanceMonths: emptyMonths(),
   socialSecurity: '',
   lifeInsurance: '',
   healthInsurance: '',
@@ -109,8 +122,17 @@ function rollPartnerTier(): PartnerTier {
   return Math.random() < 0.5 ? 4 : 5
 }
 
-function toAnnual(amount: number, period: 'month' | 'year'): number {
+function toAnnual(amount: number, period: IncomePeriod): number {
   return period === 'month' ? amount * 12 : amount
+}
+
+function annualFromForm(
+  period: IncomePeriod,
+  single: string,
+  months: string[],
+): number {
+  if (period === 'byMonth') return sumMonths(months)
+  return toAnnual(parseBahtInput(single), period)
 }
 
 function buildInput(form: FormState): TaxInput {
@@ -119,8 +141,12 @@ function buildInput(form: FormState): TaxInput {
   input.spouseHasIncome = form.spouseHasIncome
   input.incomeKind = form.incomeKind
 
-  const salaryBaht = toAnnual(parseBahtInput(form.salary), form.period)
-  const freelanceBaht = toAnnual(parseBahtInput(form.freelance), form.period)
+  const salaryBaht = annualFromForm(form.period, form.salary, form.salaryMonths)
+  const freelanceBaht = annualFromForm(
+    form.period,
+    form.freelance,
+    form.freelanceMonths,
+  )
 
   if (form.incomeKind === 'salary' || form.incomeKind === 'both') {
     input.salarySatang = bahtToSatang(salaryBaht)
@@ -177,6 +203,7 @@ export function Wizard() {
   const [deductionGroup, setDeductionGroup] = useState<DeductionGroup>('family')
   const [booting, setBooting] = useState(true)
   const [loadingStep, setLoadingStep] = useState<Step | 'boot' | null>('boot')
+  const [fastMode, setFastMode] = useState(false)
   const loadTimer = useRef<number | null>(null)
 
   const result = useMemo(() => calculateTax(buildInput(form), cfg), [form, cfg])
@@ -217,6 +244,7 @@ export function Wizard() {
         f.maritalStatus === 'married' && f.spouseHasIncome ? rollPartnerTier() : null,
     }))
     setDeductionGroup('family')
+    setFastMode(false)
     goStep(1)
   }
 
@@ -249,18 +277,54 @@ export function Wizard() {
   function restart() {
     setForm(initialForm)
     setDeductionGroup('family')
+    setFastMode(false)
     goStep(1)
+  }
+
+  function setPeriod(period: IncomePeriod) {
+    if (period === 'byMonth') {
+      patch({
+        period,
+        salaryMonths:
+          sumMonths(form.salaryMonths) > 0
+            ? form.salaryMonths
+            : fillMonths(form.salary),
+        freelanceMonths:
+          sumMonths(form.freelanceMonths) > 0
+            ? form.freelanceMonths
+            : fillMonths(form.freelance),
+      })
+      return
+    }
+    patch({ period })
+  }
+
+  function goDeductions() {
+    setFastMode(false)
+    goStep(3)
+  }
+
+  function goFastResult() {
+    setFastMode(true)
+    goStep(4)
   }
 
   const showSkeleton = booting || loadingStep != null
   const skeletonVariant = booting || loadingStep === 'boot' ? 'boot' : (loadingStep ?? 1)
 
+  const salaryOk =
+    form.period === 'byMonth'
+      ? sumMonths(form.salaryMonths) > 0
+      : parseBahtInput(form.salary) > 0
+  const freelanceOk =
+    form.period === 'byMonth'
+      ? sumMonths(form.freelanceMonths) > 0
+      : parseBahtInput(form.freelance) > 0
+
   const canNextIncome =
-    (form.incomeKind === 'salary' && parseBahtInput(form.salary) > 0) ||
-    (form.incomeKind === 'freelance' && parseBahtInput(form.freelance) > 0) ||
-    (form.incomeKind === 'both' &&
-      parseBahtInput(form.salary) > 0 &&
-      parseBahtInput(form.freelance) > 0)
+    (form.incomeKind === 'salary' && salaryOk) ||
+    (form.incomeKind === 'freelance' && freelanceOk) ||
+    (form.incomeKind === 'both' && salaryOk && freelanceOk)
 
   const incomeMax = form.period === 'month' ? 200_000 : 2_000_000
   const incomeStep = form.period === 'month' ? 1_000 : 5_000
@@ -408,46 +472,69 @@ export function Wizard() {
             title={
               form.period === 'year'
                 ? 'ปีนี้คิดว่าได้เงินเท่าไหร่?'
-                : 'เดือนหนึ่งได้ประมาณเท่าไหร่?'
+                : form.period === 'byMonth'
+                  ? 'ใส่รายได้ทีละเดือนแล้วบวกรวม'
+                  : 'เดือนหนึ่งได้ประมาณเท่าไหร่?'
             }
           >
             <ChoiceRow
               options={[
-                { value: 'month', label: 'คิดเป็นเดือน' },
+                { value: 'month', label: 'เดือนละเท่ากัน' },
+                { value: 'byMonth', label: 'เดือนไม่เท่ากัน' },
                 { value: 'year', label: 'คิดทั้งปี' },
               ]}
               value={form.period}
-              onChange={(v) => patch({ period: v as 'month' | 'year' })}
+              onChange={(v) => setPeriod(v as IncomePeriod)}
             />
           </Question>
 
-          {(form.incomeKind === 'salary' || form.incomeKind === 'both') && (
-            <RangeMoney
-              id="salary"
-              label={
-                form.period === 'month' ? 'เงินเดือน (ยังไม่หักอะไรเลย)' : 'เงินเดือนทั้งปี (รวมโบนัส)'
-              }
-              value={form.salary}
-              onChange={(salary) => patch({ salary })}
-              hint="สามารถเลื่อนหรือกรอกตัวเลขก็ได้"
-              max={incomeMax}
-              step={incomeStep}
-            />
-          )}
+          {(form.incomeKind === 'salary' || form.incomeKind === 'both') &&
+            (form.period === 'byMonth' ? (
+              <MonthIncomePad
+                id="salary-months"
+                label="เงินเดือนทีละเดือน"
+                values={form.salaryMonths}
+                onChange={(salaryMonths) => patch({ salaryMonths })}
+                hint="โบนัสใส่เดือนที่ได้ · รวมอัตโนมัติเป็นรายปี"
+              />
+            ) : (
+              <RangeMoney
+                id="salary"
+                label={
+                  form.period === 'month'
+                    ? 'เงินเดือน (ยังไม่หักอะไรเลย)'
+                    : 'เงินเดือนทั้งปี (รวมโบนัส)'
+                }
+                value={form.salary}
+                onChange={(salary) => patch({ salary })}
+                hint="สามารถเลื่อนหรือกรอกตัวเลขก็ได้"
+                max={incomeMax}
+                step={incomeStep}
+              />
+            ))}
 
-          {(form.incomeKind === 'freelance' || form.incomeKind === 'both') && (
-            <RangeMoney
-              id="freelance"
-              label={
-                form.period === 'month' ? 'ฟรีแลนซ์ต่อเดือน' : 'ฟรีแลนซ์ทั้งปี'
-              }
-              value={form.freelance}
-              onChange={(freelance) => patch({ freelance })}
-              hint="งานรับจ้างทั่วไปนะ ไม่รวมค่าเช่าหรือขายของ"
-              max={incomeMax}
-              step={incomeStep}
-            />
-          )}
+          {(form.incomeKind === 'freelance' || form.incomeKind === 'both') &&
+            (form.period === 'byMonth' ? (
+              <MonthIncomePad
+                id="freelance-months"
+                label="ฟรีแลนซ์ทีละเดือน"
+                values={form.freelanceMonths}
+                onChange={(freelanceMonths) => patch({ freelanceMonths })}
+                hint="เดือนไหนไม่มีงาน ใส่ 0 หรือว่างไว้"
+              />
+            ) : (
+              <RangeMoney
+                id="freelance"
+                label={
+                  form.period === 'month' ? 'ฟรีแลนซ์ต่อเดือน' : 'ฟรีแลนซ์ทั้งปี'
+                }
+                value={form.freelance}
+                onChange={(freelance) => patch({ freelance })}
+                hint="งานรับจ้างทั่วไปนะ ไม่รวมค่าเช่าหรือขายของ"
+                max={incomeMax}
+                step={incomeStep}
+              />
+            ))}
 
           <MoneyInput
             id="withheld"
@@ -472,7 +559,22 @@ export function Wizard() {
             </div>
           )}
 
-          <NavRow onBack={goIdentity} onNext={() => goStep(3)} nextDisabled={!canNextIncome} />
+          <div className="space-y-2 pt-1">
+            <NavRow
+              onBack={goIdentity}
+              onNext={goDeductions}
+              nextDisabled={!canNextIncome}
+              nextLabel="ต่อไป · ลดหย่อน"
+            />
+            <button
+              type="button"
+              className="btn-ghost w-full"
+              disabled={!canNextIncome}
+              onClick={goFastResult}
+            >
+              โหมดเร็ว · ข้ามลดหย่อน ดูเลขคร่าว ๆ
+            </button>
+          </div>
         </section>
       )}
 
@@ -782,7 +884,10 @@ export function Wizard() {
 
           <NavRow
             onBack={() => goStep(2)}
-            onNext={() => goStep(4)}
+            onNext={() => {
+              setFastMode(false)
+              goStep(4)
+            }}
             nextLabel="ดูสรุปภาษี"
           />
         </section>
@@ -792,7 +897,7 @@ export function Wizard() {
         <ResultView
           cfg={cfg}
           result={result}
-          onBack={() => goStep(3)}
+          onBack={() => goStep(fastMode ? 2 : 3)}
           onRestart={restart}
           hideChart
           selfGender={form.selfGender}
@@ -800,6 +905,7 @@ export function Wizard() {
           partnerGender={form.partnerGender}
           partnerTier={form.partnerTier}
           spouseHasIncome={form.spouseHasIncome}
+          fastMode={fastMode}
         />
       )}
       </>

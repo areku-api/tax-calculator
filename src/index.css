@@ -190,6 +190,114 @@ body {
   box-shadow: 4px 4px 0 rgb(30 42 50 / 0.18);
 }
 
+/* Share one-liner + copy */
+.share-line {
+  border-radius: 4px;
+  border: 3px solid var(--color-panel);
+  background: var(--color-soft);
+  padding: 0.75rem 0.9rem;
+  box-shadow: 2px 2px 0 rgb(30 42 50 / 0.12);
+}
+
+.share-line--hero {
+  display: inline-block;
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  box-shadow: 3px 3px 0 rgb(30 42 50 / 0.14);
+}
+
+.share-line__text {
+  margin: 0 0 0.65rem;
+  font-family: var(--font-pixel);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  line-height: 1.4;
+}
+
+.share-line__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.share-line__btn {
+  flex: 1;
+  min-width: 8rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+/* Month calculator pad */
+.month-pad__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+@media (min-width: 480px) {
+  .month-pad__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.month-pad__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  border-radius: 4px;
+  border: 2px solid var(--color-mid);
+  background: var(--color-white);
+  padding: 0.35rem 0.4rem 0.45rem;
+}
+
+.month-pad__mon {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--color-faint);
+  letter-spacing: 0.02em;
+}
+
+.month-pad__input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  padding: 0;
+}
+
+.month-pad__sum {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.month-pad__sum strong {
+  color: var(--color-income-text);
+  font-weight: 800;
+}
+
+.month-pad__link {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #2d6f8f;
+  text-decoration: underline;
+  cursor: grab;
+}
+
+.month-pad__link:active {
+  cursor: grabbing;
+}
+
 /* Pixel skeleton — step / boot loading */
 .skel {
   display: flex;

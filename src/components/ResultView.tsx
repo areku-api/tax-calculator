@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { TaxYearConfig } from '../config'
 import type { WealthTier } from '../characters/tiers'
 import type { MaritalStatus, TaxResult } from '../engine'
 import { formatBaht, formatBahtWithUnit } from '../engine'
+import { buildShareLine } from '../lib/shareLine'
 import { PowerGauge } from './PowerGauge'
 import { Disclaimer } from './Disclaimer'
 import { ShareCard } from './ShareCard'
@@ -22,6 +23,8 @@ type Props = {
   partnerGender?: CharacterGender | null
   partnerTier?: Extract<WealthTier, 4 | 5> | null
   spouseHasIncome?: boolean
+  /** Skipped deduction step */
+  fastMode?: boolean
 }
 
 export function ResultView({
@@ -35,17 +38,25 @@ export function ResultView({
   partnerGender = null,
   partnerTier = null,
   spouseHasIncome = false,
+  fastMode = false,
 }: Props) {
   const [showHow, setShowHow] = useState(false)
   const zeroTax = result.taxSatang === 0
+  const shareLine = useMemo(() => buildShareLine(result), [result])
 
   return (
     <div className="space-y-5 animate-[fadeIn_0.35s_ease]">
       <header className="space-y-2">
         <span className="live-pill">{cfg.label}</span>
+        {fastMode && (
+          <p className="text-xs font-semibold text-[var(--color-tax-text)]">
+            โหมดเร็ว · ยังไม่ใส่ลดหย่อน (เลขคร่าว ๆ)
+          </p>
+        )}
         <h2 className="text-2xl font-bold tracking-tight text-[var(--color-ink)]">
           ปีนี้ น่าจะเสียภาษีราว ๆ
         </h2>
+        <p className="share-line share-line--hero">{shareLine}</p>
       </header>
 
       <Disclaimer cfg={cfg} />
