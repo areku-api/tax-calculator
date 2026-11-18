@@ -3,7 +3,13 @@
     {
       "source": "/(.*)",
       "has": [{ "type": "host", "value": "taxi-chi-seven.vercel.app" }],
-      "destination": "https://donkeebaat.vercel.app/$1",
+      "destination": "https://donkeebaat.com/$1",
+      "permanent": true
+    },
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "donkeebaat.vercel.app" }],
+      "destination": "https://donkeebaat.com/$1",
       "permanent": true
     }
   ],

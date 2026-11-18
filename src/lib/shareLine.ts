@@ -30,7 +30,7 @@ export function buildShareLine(result: TaxResult): string {
 }
 
 export function siteUrl(): string {
-  if (typeof window === 'undefined') return 'https://donkeebaat.vercel.app/'
+  if (typeof window === 'undefined') return 'https://donkeebaat.com/'
   return window.location.origin + '/'
 }
 

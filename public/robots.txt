@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://donkeebaat.vercel.app/sitemap.xml
+Sitemap: https://donkeebaat.com/sitemap.xml
