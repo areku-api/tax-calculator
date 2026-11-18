@@ -21,6 +21,7 @@ import { RangeMoney } from './RangeMoney'
 import { ResultView } from './ResultView'
 import { StepSkeleton } from './StepSkeleton'
 import { Tooltip } from './Tooltip'
+import { WithheldPanel } from './WithheldPanel'
 import type { WealthTier } from '../characters/tiers'
 import { VizBoard } from './VizBoard'
 
@@ -133,6 +134,21 @@ function annualFromForm(
 ): number {
   if (period === 'byMonth') return sumMonths(months)
   return toAnnual(parseBahtInput(single), period)
+}
+
+/** Resolve 12 monthly baht amounts for withheld % math */
+function monthsFromForm(
+  period: IncomePeriod,
+  single: string,
+  months: string[],
+): number[] {
+  if (period === 'byMonth') {
+    const arr = months.length === 12 ? months : emptyMonths()
+    return arr.map((v) => parseBahtInput(v))
+  }
+  const annual = toAnnual(parseBahtInput(single), period)
+  const per = annual / 12
+  return Array.from({ length: 12 }, () => per)
 }
 
 function buildInput(form: FormState): TaxInput {
@@ -328,6 +344,16 @@ export function Wizard() {
 
   const incomeMax = form.period === 'month' ? 200_000 : 2_000_000
   const incomeStep = form.period === 'month' ? 1_000 : 5_000
+
+  const salaryMonthBaht = useMemo(
+    () => monthsFromForm(form.period, form.salary, form.salaryMonths),
+    [form.period, form.salary, form.salaryMonths],
+  )
+  const freelanceMonthBaht = useMemo(
+    () => monthsFromForm(form.period, form.freelance, form.freelanceMonths),
+    [form.period, form.freelance, form.freelanceMonths],
+  )
+
   return (
     <div className="app-shell">
       <aside className="viz-pane" aria-label="ตัวละครและเกจภาษี">
@@ -345,12 +371,6 @@ export function Wizard() {
 
       <main className="form-pane">
       {step < 4 && !booting && <Brand yearLabel={cfg.label} />}
-      {booting && (
-        <header className="mb-2 space-y-2">
-          <div className="skel__block skel__block--lg" style={{ width: '12rem' }} />
-          <div className="skel__block skel__block--md" />
-        </header>
-      )}
 
       {step < 4 && !booting && (
         <nav className="mb-7 mt-6" aria-label="ขั้นตอน">
@@ -399,7 +419,7 @@ export function Wizard() {
           </div>
 
           <Question
-            title="ตัวละครหน้าตาแบบไหน?"
+            title="ตัวละครหน้าตาแบบไหน ?"
             tip={'แค่เลือกเพศตัวละครบนจอ\nไม่เกี่ยวกับการคำนวณภาษี'}
           >
             <ChoiceRow
@@ -412,7 +432,7 @@ export function Wizard() {
             />
           </Question>
 
-          <Question title="ปีนี้เป็นโสด หรือแต่งงานแล้ว?">
+          <Question title="ปีนี้เป็นโสด หรือแต่งงานแล้ว ?">
             <ChoiceRow
               options={[
                 { value: 'single', label: 'โสด' },
@@ -425,7 +445,7 @@ export function Wizard() {
 
           {form.maritalStatus === 'married' && (
             <>
-              <Question title="แฟน/คู่มีรายได้ด้วยไหม?">
+              <Question title="แฟน/คู่มีรายได้ด้วยไหม ?">
                 <ChoiceRow
                   options={[
                     { value: 'no', label: 'ไม่มี' },
@@ -435,7 +455,7 @@ export function Wizard() {
                   onChange={(v) => setSpouseHasIncome(v === 'yes')}
                 />
               </Question>
-              <Fyi title="FYI · คู่สมรส">
+              <Fyi title="รู้ไว้ · คู่สมรส">
                 <ul>
                   <li>
                     คู่ไม่มีรายได้ → ลดหย่อนคู่ได้อีก{' '}
@@ -448,7 +468,7 @@ export function Wizard() {
           )}
 
           <Question
-            title="เงินเข้ามาจากทางไหน?"
+            title="เงินเข้ามาจากทางไหน ?"
             tip={'เงินเดือน = มาตรา 40(1)\nรับจ้างทั่วไป = 40(2)'}
           >
             <ChoiceRow
@@ -479,9 +499,9 @@ export function Wizard() {
           >
             <ChoiceRow
               options={[
-                { value: 'month', label: 'เดือนละเท่ากัน' },
-                { value: 'byMonth', label: 'เดือนไม่เท่ากัน' },
-                { value: 'year', label: 'คิดทั้งปี' },
+                { value: 'month', label: 'รายได้คงที่ทุกเดือน' },
+                { value: 'byMonth', label: 'รายได้ไม่คงที่' },
+                { value: 'year', label: 'รายได้ทั้งปี' },
               ]}
               value={form.period}
               onChange={(v) => setPeriod(v as IncomePeriod)}
@@ -536,19 +556,29 @@ export function Wizard() {
               />
             ))}
 
-          <MoneyInput
-            id="withheld"
-            label="มีภาษีถูกหักไปแล้วไหม (ทั้งปี)"
+          <WithheldPanel
+            incomeKind={form.incomeKind}
+            salaryMonths={salaryMonthBaht}
+            freelanceMonths={freelanceMonthBaht}
             value={form.taxWithheld}
             onChange={(taxWithheld) => patch({ taxWithheld })}
-            optional
-            hint="ดูในสลิป 50 ทวิ หรือใบหัก ณ ที่จ่ายก็ได้"
           />
-          <Fyi title="FYI · ภาษีหักแล้ว">
+          <Fyi title="รู้ไว้ · หัก ณ ที่จ่าย">
             <ul>
-              <li>ไม่รู้ยอดก็ว่างไว้ก่อนได้</li>
-              <li>ใส่รายได้คร่าว ๆ ก็พอให้เห็นภาพภาษี</li>
-              <li>มีสลิปค่อยเติมทีหลัง</li>
+              <li>
+                คือเงินที่ถูกหักส่งสรรพากรไปแล้วระหว่างปี *ไม่ใช่ลดหย่อน
+              </li>
+              <li>
+                ฟรีแลนซ์มักโดน 3% (บางเคส 5%) จากยอดที่จ่าย · เงินเดือนมักหักตามสลิป
+              </li>
+              <li>
+                เรตเปลี่ยนกลางปี เช่น ม.ค.–ส.ค. 3% ที่เหลือ 5% → ใช้โหมด
+                “เรตไม่เท่ากัน”
+              </li>
+              <li>
+                เครื่องจะเทียบภาษีทั้งปีกับยอดหักแล้ว → บอกว่าได้คืนหรือจ่ายเพิ่ม
+              </li>
+              <li>ไม่รู้ยอดก็กด “ไม่มี / ไม่รู้” ได้</li>
             </ul>
           </Fyi>
 
@@ -589,7 +619,7 @@ export function Wizard() {
             </p>
           </header>
 
-          <Fyi title="FYI · ลดหย่อนคืออะไร">
+          <Fyi title="รู้ไว้ · ลดหย่อนคืออะไร">
             <ul>
               <li>ยอดที่รัฐยอมหักออกก่อนคิดภาษี</li>
               <li>ยิ่งหักได้มาก ภาษีก็ยิ่งน้อย</li>
@@ -623,7 +653,7 @@ export function Wizard() {
 
           {deductionGroup === 'family' && (
             <div className="panel space-y-4 p-4">
-              <Fyi title="FYI · ครอบครัว">
+              <Fyi title="รู้ไว้ · ครอบครัว">
                 <ul>
                   <li>ส่วนตัวหักให้อัตโนมัติแล้ว ไม่ต้องทำอะไร</li>
                   <li>ลูกคนแรกหัก {formatBaht(cfg.personal.childBaseSatang)}</li>
@@ -647,7 +677,7 @@ export function Wizard() {
               <label className="block space-y-1.5 text-sm">
                 <span className="font-semibold">มีลูกกี่คนที่ลดหย่อนได้?</span>
                 <select
-                  className="w-full rounded-2xl border border-[rgb(34_34_34/0.1)] bg-white px-3 py-3"
+                  className="w-full rounded-2xl border border-[rgb(34_34_34/0.1)] bg-white px-3 py-3 text-base font-semibold"
                   value={form.childCount}
                   onChange={(e) => patch({ childCount: e.target.value })}
                 >
@@ -725,7 +755,7 @@ export function Wizard() {
 
           {deductionGroup === 'insurance' && (
             <div className="panel space-y-4 p-4">
-              <Fyi title="FYI · ประกัน">
+              <Fyi title="รู้ไว้ · ประกัน">
                 <ul>
                   <li>
                     ประกันสังคมดูจากสลิปเงินเดือน รวมทั้งปีได้เลย ปีนี้เพดานประมาณ{' '}
@@ -776,7 +806,7 @@ export function Wizard() {
 
           {deductionGroup === 'retirement' && (
             <div className="panel space-y-4 p-4">
-              <Fyi title="FYI · ออม / เกษียณ">
+              <Fyi title="รู้ไว้ · ออม / เกษียณ">
                 <ul>
                   <li>
                     RMF, กองทุนสำรองเลี้ยงชีพ, กบข., กอช., ประกันบำนาญ รวมกันไม่เกิน{' '}
@@ -824,7 +854,7 @@ export function Wizard() {
 
           {deductionGroup === 'other' && (
             <div className="panel space-y-4 p-4">
-              <Fyi title="FYI · บริจาค / อื่น ๆ">
+              <Fyi title="รู้ไว้ · บริจาค / อื่น ๆ">
                 <ul>
                   <li>ตั้งแต่ปี 2569 บริจาคต้องผ่าน e-Donation ถึงจะลดหย่อนได้</li>
                   <li>
