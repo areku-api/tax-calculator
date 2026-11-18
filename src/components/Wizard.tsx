@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ACTIVE_TAX_YEAR, getTaxYearConfig } from '../config'
 import {
   bahtToSatang,
@@ -13,9 +13,13 @@ import { EquationBar } from './EquationBar'
 import { MoneyInput, parseBahtInput } from './MoneyInput'
 import { RangeMoney } from './RangeMoney'
 import { ResultView } from './ResultView'
+import { StepSkeleton } from './StepSkeleton'
 import { Tooltip } from './Tooltip'
 import type { WealthTier } from '../characters/tiers'
 import { VizBoard } from './VizBoard'
+
+const STEP_LOAD_MS = 420
+const BOOT_LOAD_MS = 650
 
 type Step = 1 | 2 | 3 | 4
 type DeductionGroup = 'family' | 'insurance' | 'retirement' | 'other'
@@ -171,8 +175,33 @@ export function Wizard() {
   const [step, setStep] = useState<Step>(1)
   const [form, setForm] = useState<FormState>(initialForm)
   const [deductionGroup, setDeductionGroup] = useState<DeductionGroup>('family')
+  const [booting, setBooting] = useState(true)
+  const [loadingStep, setLoadingStep] = useState<Step | 'boot' | null>('boot')
+  const loadTimer = useRef<number | null>(null)
 
   const result = useMemo(() => calculateTax(buildInput(form), cfg), [form, cfg])
+
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      setBooting(false)
+      setLoadingStep(null)
+    }, BOOT_LOAD_MS)
+    return () => {
+      window.clearTimeout(t)
+      if (loadTimer.current != null) window.clearTimeout(loadTimer.current)
+    }
+  }, [])
+
+  function goStep(next: Step) {
+    if (next === step && loadingStep == null) return
+    if (loadTimer.current != null) window.clearTimeout(loadTimer.current)
+    setLoadingStep(next)
+    loadTimer.current = window.setTimeout(() => {
+      setStep(next)
+      setLoadingStep(null)
+      loadTimer.current = null
+    }, STEP_LOAD_MS)
+  }
 
   function patch(p: Partial<FormState>) {
     setForm((f) => ({ ...f, ...p }))
@@ -188,7 +217,7 @@ export function Wizard() {
         f.maritalStatus === 'married' && f.spouseHasIncome ? rollPartnerTier() : null,
     }))
     setDeductionGroup('family')
-    setStep(1)
+    goStep(1)
   }
 
   function setSelfGender(gender: CharacterGender) {
@@ -219,9 +248,12 @@ export function Wizard() {
 
   function restart() {
     setForm(initialForm)
-    setStep(1)
     setDeductionGroup('family')
+    goStep(1)
   }
+
+  const showSkeleton = booting || loadingStep != null
+  const skeletonVariant = booting || loadingStep === 'boot' ? 'boot' : (loadingStep ?? 1)
 
   const canNextIncome =
     (form.incomeKind === 'salary' && parseBahtInput(form.salary) > 0) ||
@@ -248,15 +280,22 @@ export function Wizard() {
       </aside>
 
       <main className="form-pane">
-      {step < 4 && <Brand yearLabel={cfg.label} />}
+      {step < 4 && !booting && <Brand yearLabel={cfg.label} />}
+      {booting && (
+        <header className="mb-2 space-y-2">
+          <div className="skel__block skel__block--lg" style={{ width: '12rem' }} />
+          <div className="skel__block skel__block--md" />
+        </header>
+      )}
 
-      {step < 4 && (
+      {step < 4 && !booting && (
         <nav className="mb-7 mt-6" aria-label="ขั้นตอน">
           <ol className="flex gap-1.5">
             {STEPS.map((label, i) => {
               const n = (i + 1) as Step
-              const active = step === n
-              const done = step > n
+              const preview = loadingStep != null && loadingStep !== 'boot' ? loadingStep : step
+              const active = preview === n
+              const done = preview > n
               return (
                 <li key={label} className="flex-1">
                   <div
@@ -280,6 +319,10 @@ export function Wizard() {
         </nav>
       )}
 
+      {showSkeleton ? (
+        <StepSkeleton variant={skeletonVariant} />
+      ) : (
+      <>
       {step === 1 && (
         <section className="space-y-6 animate-[fadeIn_0.3s_ease]">
           <div className="quest-intro">
@@ -355,7 +398,7 @@ export function Wizard() {
             />
           </Question>
 
-          <PrimaryButton onClick={() => setStep(2)}>ไปใส่รายได้</PrimaryButton>
+          <PrimaryButton onClick={() => goStep(2)}>ไปใส่รายได้</PrimaryButton>
         </section>
       )}
 
@@ -429,7 +472,7 @@ export function Wizard() {
             </div>
           )}
 
-          <NavRow onBack={goIdentity} onNext={() => setStep(3)} nextDisabled={!canNextIncome} />
+          <NavRow onBack={goIdentity} onNext={() => goStep(3)} nextDisabled={!canNextIncome} />
         </section>
       )}
 
@@ -738,8 +781,8 @@ export function Wizard() {
           )}
 
           <NavRow
-            onBack={() => setStep(2)}
-            onNext={() => setStep(4)}
+            onBack={() => goStep(2)}
+            onNext={() => goStep(4)}
             nextLabel="ดูสรุปภาษี"
           />
         </section>
@@ -749,7 +792,7 @@ export function Wizard() {
         <ResultView
           cfg={cfg}
           result={result}
-          onBack={() => setStep(3)}
+          onBack={() => goStep(3)}
           onRestart={restart}
           hideChart
           selfGender={form.selfGender}
@@ -758,6 +801,8 @@ export function Wizard() {
           partnerTier={form.partnerTier}
           spouseHasIncome={form.spouseHasIncome}
         />
+      )}
+      </>
       )}
       </main>
     </div>

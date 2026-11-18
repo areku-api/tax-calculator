@@ -84,6 +84,7 @@ body {
   padding: 0.85rem 1.25rem;
   border: 3px solid var(--color-panel);
   box-shadow: 3px 3px 0 var(--color-panel);
+  cursor: grab;
   transition:
     transform 0.12s ease,
     box-shadow 0.12s ease,
@@ -93,8 +94,15 @@ body {
 
 .btn-primary:hover:not(:disabled) {
   background: #2fb876;
+  cursor: grab;
   transform: translate(1px, 1px);
   box-shadow: 2px 2px 0 var(--color-panel);
+}
+
+.btn-primary:active:not(:disabled) {
+  cursor: grabbing;
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--color-panel);
 }
 
 .btn-primary:disabled {
@@ -112,13 +120,22 @@ body {
   padding: 0.85rem 1.1rem;
   border: 3px solid var(--color-mid);
   box-shadow: 2px 2px 0 rgb(30 42 50 / 0.12);
-  transition: border-color 0.15s ease, background 0.15s ease, transform 0.12s ease;
+  cursor: grab;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.12s ease,
+    box-shadow 0.12s ease;
 }
 
 .btn-ghost:hover {
   border-color: var(--color-accent);
   background: var(--color-soft);
+  cursor: grab;
   transform: translate(1px, 1px);
+}
+
+.btn-ghost:active {
+  cursor: grabbing;
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 rgb(30 42 50 / 0.12);
 }
 
 .choice {
@@ -130,6 +147,7 @@ body {
   background: var(--color-white);
   color: var(--color-ink);
   box-shadow: 2px 2px 0 rgb(30 42 50 / 0.1);
+  cursor: grab;
   transition:
     transform 0.12s ease,
     border-color 0.15s ease,
@@ -141,7 +159,14 @@ body {
 .choice:hover {
   border-color: #7eb8d4;
   background: #f3fafd;
+  cursor: grab;
   transform: translateY(-1px);
+}
+
+.choice:active {
+  cursor: grabbing;
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 rgb(30 42 50 / 0.1);
 }
 
 /* Selection chip ≠ CTA: outline + soft fill, not solid green */
@@ -163,6 +188,159 @@ body {
   background: var(--color-white);
   border: 3px solid var(--color-panel);
   box-shadow: 4px 4px 0 rgb(30 42 50 / 0.18);
+}
+
+/* Pixel skeleton — step / boot loading */
+.skel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0.15rem 0 1rem;
+  animation: fadeIn 0.2s ease both;
+}
+
+.skel__label {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-pixel);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-brown-deep);
+}
+
+.skel__pix {
+  width: 0.65rem;
+  height: 0.65rem;
+  background: var(--color-accent);
+  border: 2px solid var(--color-panel);
+  box-shadow: 1px 1px 0 var(--color-panel);
+  animation: skel-blink 0.7s steps(2, end) infinite;
+}
+
+.skel__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.85rem 1rem;
+  border-radius: 4px;
+  border: 3px solid var(--color-panel);
+  background: var(--color-white);
+  box-shadow: 3px 3px 0 rgb(30 42 50 / 0.14);
+}
+
+.skel__row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.skel__block,
+.skel__choice,
+.skel__chip,
+.skel__stat,
+.skel__btn {
+  border-radius: 3px;
+  border: 2px solid rgb(30 42 50 / 0.12);
+  background:
+    repeating-linear-gradient(
+      90deg,
+      var(--color-soft) 0 8px,
+      var(--color-chip) 8px 16px
+    );
+  background-size: 32px 100%;
+  animation: skel-slide 0.9s steps(4, end) infinite;
+}
+
+.skel__block--xs {
+  height: 0.65rem;
+  width: 38%;
+}
+.skel__block--sm {
+  height: 0.85rem;
+  width: 55%;
+}
+.skel__block--md {
+  height: 0.85rem;
+  width: 88%;
+}
+.skel__block--lg {
+  height: 1.75rem;
+  width: 70%;
+}
+.skel__block--bar {
+  height: 2.6rem;
+  width: 100%;
+  border-radius: 4px;
+  border-width: 3px;
+  border-color: var(--color-mid);
+}
+.skel__block--hero {
+  height: 3.5rem;
+  width: 72%;
+  border-radius: 4px;
+  border-width: 3px;
+  border-color: var(--color-panel);
+}
+
+.skel__choice {
+  flex: 1;
+  height: 2.75rem;
+  border-width: 3px;
+  border-color: var(--color-mid);
+}
+
+.skel__chip {
+  flex: 1;
+  height: 0.45rem;
+  border-radius: 999px;
+}
+
+.skel__stat {
+  flex: 1;
+  height: 3.2rem;
+  border-width: 3px;
+  border-color: var(--color-panel);
+}
+
+.skel__btn {
+  height: 3rem;
+  width: 100%;
+  margin-top: 0.35rem;
+  border-width: 3px;
+  border-color: var(--color-panel);
+  box-shadow: 3px 3px 0 var(--color-panel);
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #9fe8c4 0 8px,
+      var(--color-accent) 8px 16px
+    );
+  background-size: 32px 100%;
+}
+
+@keyframes skel-slide {
+  to {
+    background-position: 32px 0;
+  }
+}
+
+@keyframes skel-blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .quest-intro {
