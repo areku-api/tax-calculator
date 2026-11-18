@@ -1,5 +1,4 @@
 User-agent: *
 Allow: /
 
-# แก้โดเมนให้ตรงของจริง
-Sitemap: https://donkeebaat.vercel.app/
+Sitemap: https://donkeebaat.vercel.app/sitemap.xml

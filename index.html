@@ -20,7 +20,6 @@
     <meta name="author" content="โดนกี่บาท" />
     <meta name="theme-color" content="#3ecf8e" />
 
-    <!-- แก้เป็นโดเมนจริงหลัง deploy -->
     <link rel="canonical" href="https://donkeebaat.vercel.app/" />
 
     <!-- Open Graph -->
@@ -34,6 +33,9 @@
     />
     <meta property="og:url" content="https://donkeebaat.vercel.app/" />
     <meta property="og:image" content="https://donkeebaat.vercel.app/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="โดนกี่บาท — คำนวณภาษีเงินเดือน 2569" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
@@ -42,6 +44,7 @@
       name="twitter:description"
       content="คำนวณภาษีเงินเดือนและฟรีแลนซ์ ปี 2569 ฟรี ดูว่าโดนกี่บาท"
     />
+    <meta name="twitter:image" content="https://donkeebaat.vercel.app/og.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -71,13 +74,28 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- สำรองให้ crawler ที่รัน JS ไม่เต็ม: มี keyword ในหน้า -->
-    <noscript>
-      <h1>คำนวณภาษีเงินเดือน และภาษีฟรีแลนซ์ ปี 2569</h1>
+    <!-- Static SEO shell: crawlers read this before/without full JS -->
+    <main id="seo-static">
+      <h1>คำนวณภาษีเงินเดือน 2569 และภาษีฟรีแลนซ์ — โดนกี่บาท</h1>
       <p>
         โดนกี่บาท เครื่องมือคำนวณภาษีเงินได้บุคคลธรรมดาออนไลน์ฟรี สำหรับมนุษย์เงินเดือน
         (มาตรา 40(1)) และฟรีแลนซ์รับจ้างทั่วไป (40(2)) ปีภาษี 2569
+        ใส่รายได้แล้วดูว่าโดนกี่บาท คิดบนเครื่องคุณ ไม่เก็บข้อมูล ไม่ต้องสมัคร
       </p>
+      <h2>คำนวณอะไรได้บ้าง</h2>
+      <ul>
+        <li>ภาษีเงินเดือน / เงินได้มาตรา 40(1)</li>
+        <li>ภาษีฟรีแลนซ์ / รับจ้างทั่วไป 40(2)</li>
+        <li>ลดหย่อนส่วนตัว คู่สมรส ประกัน สังคม ลูก</li>
+        <li>ภาษีอย่างต่ำ 0.5% สำหรับรายได้ฟรีแลนซ์</li>
+      </ul>
+      <p>
+        เริ่มคำนวณที่
+        <a href="https://donkeebaat.vercel.app/">donkeebaat.vercel.app</a>
+      </p>
+    </main>
+    <noscript>
+      <p>เปิด JavaScript เพื่อใช้เครื่องคำนวณแบบโต้ตอบ</p>
     </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
